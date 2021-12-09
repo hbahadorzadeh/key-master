@@ -1,0 +1,20 @@
+FROM golang:1.16 as base
+WORKDIR /go/src/app
+RUN --mount=type=cache,target=~/.cache/go-build \
+      go get github.com/go-delve/delve/cmd/dlv
+
+COPY go.* ./
+RUN --mount=type=cache,target=~/.cache/go-build \
+      go mod download
+FROM base as builder
+COPY . .
+ENV CGO_ENABLED=0
+RUN --mount=type=cache,target=~/.cache/go-build \
+      go build  -gcflags="all=-N -l" -o app
+
+FROM golang:1.16
+EXPOSE 8000 40000
+WORKDIR /opt/key-master/
+COPY --from=build-env /go/bin/dlv /
+COPY --from=builder /go/src/app/app /opt/key-master/key-master
+CMD ["/dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/opt/key-master/key-master"]

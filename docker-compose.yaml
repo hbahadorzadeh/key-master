@@ -1,0 +1,36 @@
+services:
+
+  mongo:
+    image: mongo:5.0.3
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+    - 127.0.0.1:27017:27017
+    volumes:
+    - mongo:/data/db
+
+  redis:
+    image: redis:6.2.6
+    restart: always
+    ports:
+    - 127.0.0.1:6379:6379
+    volumes:
+    - redis:/data
+
+  key-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+    - ./config.json:/opt/key-master/config.json
+    ports:
+    - 127.0.0.1:3000:3000
+    environment:
+      DB_MONGODB_SERVERS: mongo
+      DB_MONGODB_DB: key-master
+      REDIS_ADDRESS: redis
+volumes:
+  redis:
+  mongo:
